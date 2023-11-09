@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
+#include <fcntl.h>
 
 #ifndef MAX_WORDS
 #define MAX_WORDS 512
@@ -49,8 +50,176 @@ int main(int argc, char *argv[])
       words[i] = exp_word;
       fprintf(stderr, "Expanded Word %zu: %s\n", i, words[i]);
     }
+
+    char *command = words[0];
+
+    if (strcmp(command, "exit") == 0) {
+      if (nwords > 2) {
+        fprintf(stderr, "exit: too many arguments\n");
+      }
+      else if (nwords == 2) {
+        if (atoi(words[1]) == 0) {
+          fprintf(stderr, "exit: argument must be a non-negative integer\n");
+        }
+        else {
+          exit(atoi(words[1]));
+        }
+      }
+      else {
+        // TODO: after non-built-in commands
+        // exit with value of $? (status of last foreground process)
+
+      }
+    }
+    // if command is cd
+    else if (strcmp(command, "cd") == 0) {
+      if (nwords > 2) {
+        fprintf(stderr, "cd: too many arguments\n");
+      }
+      else if (nwords == 2) {
+        if (chdir(words[1]) == -1) {
+          fprintf(stderr, "cd: %s: %s\n", words[1], strerror(errno));
+        }
+      }
+      else {
+        // change directory to HOME
+        if (chdir(getenv("HOME")) == -1) {
+          fprintf(stderr, "cd: %s\n", strerror(errno));
+        }
+      }
+    }
+    else {
+      // otherwise it's a non-built-in command and we need to fork
+      int background = 0;
+      pid_t pid = -5;
+      pid = fork();      
+      // a switch statement for the pid, if it's the parent, child, or error
+      switch (pid) {
+        case -1:
+          fprintf(stderr, "fork: %s\n", strerror(errno));
+          exit(1);
+          break;
+        case 0:
+          // child process
+          // TODO: All signals shall be reset to their original dispositions when smallsh was invoked
+          // scan words left to right and if there is any of <, >, and >>
+          // then we need to open a file and redirect stdin or stdout
+          // a loop through words
+          // a variable that stores whether there was a &
+          int has_command_path = 0;
+          // if there is a &, then we need to set the variable to 1
+          // and remove the & from the words array
+
+          for (size_t i = 0; i < nwords; ++i) {
+            // if there is a <, then we need to open the file for reading
+            if (strcmp(words[i], "<") == 0) {
+              // open the file for reading
+              FILE *input_file = fopen(words[i + 1], "r");
+              if (!input_file) {
+                fprintf(stderr, "%s: %s\n", words[i + 1], strerror(errno));
+                exit(1);
+              }
+              // dup2 the file descriptor to stdin
+              if (dup2(fileno(input_file), STDIN_FILENO) == -1) {
+                fprintf(stderr, "dup2: %s\n", strerror(errno));
+                exit(1);
+              }
+              // remove the < and the file name from the words array
+              words[i] = NULL;
+              words[i + 1] = NULL;
+              break;
+            }
+            // if there is a >, then we need to open the file for writing
+            else if (strcmp(words[i], ">") == 0) {
+              // open the specified file for writing on stdoout. If the file does not exist it will be
+              // created. If the file exists, it will be truncated to 0 bytes. File permissions will
+              // be set to 0777.
+              FILE *output_file = open(words[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0777);
+              if (!output_file) {
+                fprintf(stderr, "%s: %s\n", words[i + 1], strerror(errno));
+                exit(1);
+              }
+
+              // dup2 the file descriptor to stdout
+              if (dup2(fileno(output_file), STDOUT_FILENO) == -1) {
+                fprintf(stderr, "dup2: %s\n", strerror(errno));
+                exit(1);
+              }
+              // close the file descriptor?
+              // remove the > and the file name from the words array
+              words[i] = NULL;
+              words[i + 1] = NULL;
+              break;
+            }
+            // if there is a >>, then we need to open the file for appending
+            else if (strcmp(words[i], ">>") == 0) {
+              // open the specified file for appending on stdout. If the file does not exist it will be
+              // created. File permissions will be set to 0777.
+              FILE *output_file = open(words[i + 1], O_WRONLY | O_CREAT | O_APPEND, 0777);
+              if (!output_file) {
+                fprintf(stderr, "%s: %s\n", words[i + 1], strerror(errno));
+                exit(1);
+              }
+
+              // dup2 the file descriptor to stdout
+              if (dup2(fileno(output_file), STDOUT_FILENO) == -1) {
+                fprintf(stderr, "dup2: %s\n", strerror(errno));
+                exit(1);
+              }
+              // close the file descriptor?
+              // remove the >> and the file name from the words array
+              words[i] = NULL;
+              words[i + 1] = NULL;
+              break;
+            }        
+          }
+          // if there is a &, then we need to set the background to 1
+          if (strcmp(words[nwords - 1], "&") == 0) {
+            background = 1;
+            words[nwords - 1] = NULL;
+          }
+          // if the command contains a /, then set has_command_path to 1
+          if (strchr(command, '/') != NULL) {
+            has_command_path = 1;
+          }
+          // if words is not empty, then we need to execute the command
+          if (words[0] != NULL) {
+            // if the command contains a /
+            if (has_command_path == 1) {
+              // execute the command with execv
+              if (execv(command, words) == -1) {
+                fprintf(stderr, "%s: %s\n", command, strerror(errno));
+                exit(1);
+              }
+            } else {
+              // execute the command with execvp
+              if (execvp(command, words) == -1) {
+                fprintf(stderr, "%s: %s\n", command, strerror(errno));
+                exit(1);
+              }
+            }
+          }
+        }
+        // parent process
+        // if the command is not a background process
+        if (background == 0) {
+          // wait for the child process to finish
+          int status;
+          waitpid(pid, &status, 0);
+          // if the child process was terminated by a signal, then set the $? shell variable to
+          // the signal number + 128
+          
+
+         
+        }
+        // if the command is a background process
+        else {
+          // print the pid of the background process
+          printf("background pid is %d\n", pid);
+        }
+      }
+    }
   }
-}
 
 char *words[MAX_WORDS] = {0};
 
