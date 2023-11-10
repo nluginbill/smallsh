@@ -234,8 +234,9 @@ int main(int argc, char *argv[])
             if (WIFSIGNALED(status)) {
               printf("terminated by signal %d\n", WTERMSIG(status));
               last_foreground_exit_status = WTERMSIG(status) + 128;
+            } else {
+              last_foreground_exit_status = WEXITSTATUS(status);
             }
-            last_foreground_exit_status = status;
           }
           break;
         }
