@@ -54,11 +54,11 @@ int main(int argc, char *argv[])
     
     size_t nwords = wordsplit(line);
     for (size_t i = 0; i < nwords; ++i) {
-      fprintf(stderr, "Word %zu: %s\n", i, words[i]);
+      // fprintf(stderr, "Word %zu: %s\n", i, words[i]);
       char *exp_word = expand(words[i]);
       free(words[i]);
       words[i] = exp_word;
-      fprintf(stderr, "Expanded Word %zu: %s\n", i, words[i]);
+      // fprintf(stderr, "Expanded Word %zu: %s\n", i, words[i]);
     }
 
     char *command = words[0];
