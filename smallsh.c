@@ -176,21 +176,21 @@ int main(int argc, char *argv[])
               break;
             }        
           }
-          // if <PID> is in the command, then replace it with the pid of smallsh
           for (size_t i = 0; i < nwords; ++i) {
+            // if <PID> is in the command, then replace it with the pid of smallsh
             if (strcmp(words[i], "<PID>") == 0) {
               char pid_str[10];
               sprintf(pid_str, "%d", smallsh_pid);
               words[i] = pid_str;
             }
-          }// if <STATUS> is in the command, then replace it with the status of the last foreground
-          // process
-          for (size_t i = 0; i < nwords; ++i) {
+            // if <STATUS> is in the command, then replace it with the status of the last foreground
+            // process
             if (strcmp(words[i], "<STATUS>") == 0) {
               char status_str[10];
               sprintf(status_str, "%d", last_foreground_exit_status);
               words[i] = status_str;
             }
+
           }
           // if there is a &, then we need to set the background to 1
           if (strcmp(words[nwords - 1], "&") == 0) {
@@ -228,16 +228,14 @@ int main(int argc, char *argv[])
             // wait for the child process to finish
             int status;
             pid_t last_foreground_pid = waitpid(pid, &status, 0);
-            // if waitpid returned an error, then print the error)
             if (last_foreground_pid == -1) {
               fprintf(stderr, "waitpid: %s\n", strerror(errno));
             }
-            // if the child process was terminated by a signal, then set the $? shell variable to
-            // the signal number + 128
             if (WIFSIGNALED(status)) {
               printf("terminated by signal %d\n", WTERMSIG(status));
               last_foreground_exit_status = WTERMSIG(status) + 128;
             }
+            last_foreground_exit_status = status;
           }
           break;
         }
