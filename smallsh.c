@@ -16,7 +16,7 @@
 
 char *words[MAX_WORDS];
 pid_t last_background_pid = -5;
-pid_t last_foreground_pid = 0;
+pid_t last_foreground_exit_status = 0;
 pid_t smallsh_pid = -5;
 size_t wordsplit(char const *line);
 char * expand(char const *word);
@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
       else {
         // TODO: after non-built-in commands
         // exit with value of $? (status of last foreground process)
+        exit(last_foreground_exit_status);
 
       }
     }
@@ -199,19 +200,27 @@ int main(int argc, char *argv[])
               }
             }
           }
-        }
-        // parent process
-        // if the command is not a background process (foreground process)
-        if (background == 0) {
-          // wait for the child process to finish
-          int status;
-          last_foreground_pid = waitpid(pid, &status, 0);
-          // if the child process was terminated by a signal, then set the $? shell variable to
-          // the signal number + 128
-          if (WIFSIGNALED(status)) {
-            last_foreground_pid = WTERMSIG(status) + 128;
+          default:
+          // parent process
+          // if the command is not a background process (foreground process)
+          if (background == 0) {
+            // wait for the child process to finish
+            int status;
+            pid_t last_foreground_pid = waitpid(pid, &status, 0);
+            // if waitpid returned an error, then print the error)
+            if (last_foreground_pid == -1) {
+              fprintf(stderr, "waitpid: %s\n", strerror(errno));
+            }
+            // if the child process was terminated by a signal, then set the $? shell variable to
+            // the signal number + 128
+            if (WIFSIGNALED(status)) {
+              printf("terminated by signal %d\n", WTERMSIG(status));
+              last_foreground_exit_status = WTERMSIG(status) + 128;
+            }
           }
+          break;
         }
+        
       }
     }
   }
