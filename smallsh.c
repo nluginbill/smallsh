@@ -8,17 +8,22 @@
 #include <ctype.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 
 #ifndef MAX_WORDS
 #define MAX_WORDS 512
 #endif
 
 char *words[MAX_WORDS];
+pid_t last_background_pid = -5;
+pid_t last_foreground_pid = 0;
+pid_t smallsh_pid = -5;
 size_t wordsplit(char const *line);
 char * expand(char const *word);
 
 int main(int argc, char *argv[])
 {
+  smallsh_pid = getpid();
   FILE *input = stdin;
   char *input_fn = "(stdin)";
   if (argc == 2) {
@@ -89,11 +94,11 @@ int main(int argc, char *argv[])
       }
     }
     else {
-      // otherwise it's a non-built-in command and we need to fork
+      // non-built-in commands
       int background = 0;
       pid_t pid = -5;
       pid = fork();      
-      // a switch statement for the pid, if it's the parent, child, or error
+      // for handling error, child, or parent process
       switch (pid) {
         case -1:
           fprintf(stderr, "fork: %s\n", strerror(errno));
@@ -102,24 +107,17 @@ int main(int argc, char *argv[])
         case 0:
           // child process
           // TODO: All signals shall be reset to their original dispositions when smallsh was invoked
-          // scan words left to right and if there is any of <, >, and >>
-          // then we need to open a file and redirect stdin or stdout
-          // a loop through words
-          // a variable that stores whether there was a &
-          int has_command_path = 0;
-          // if there is a &, then we need to set the variable to 1
-          // and remove the & from the words array
+          int has_command_path = 0;          
 
           for (size_t i = 0; i < nwords; ++i) {
             // if there is a <, then we need to open the file for reading
             if (strcmp(words[i], "<") == 0) {
-              // open the file for reading
               FILE *input_file = fopen(words[i + 1], "r");
               if (!input_file) {
                 fprintf(stderr, "%s: %s\n", words[i + 1], strerror(errno));
                 exit(1);
               }
-              // dup2 the file descriptor to stdin
+              // set the file to stdin
               if (dup2(fileno(input_file), STDIN_FILENO) == -1) {
                 fprintf(stderr, "dup2: %s\n", strerror(errno));
                 exit(1);
@@ -140,7 +138,6 @@ int main(int argc, char *argv[])
                 exit(1);
               }
 
-              // dup2 the file descriptor to stdout
               if (dup2(fileno(output_file), STDOUT_FILENO) == -1) {
                 fprintf(stderr, "dup2: %s\n", strerror(errno));
                 exit(1);
@@ -176,9 +173,12 @@ int main(int argc, char *argv[])
           // if there is a &, then we need to set the background to 1
           if (strcmp(words[nwords - 1], "&") == 0) {
             background = 1;
+            // remove the & from the words array
             words[nwords - 1] = NULL;
+            // store the current pid as the last background pid
+            last_background_pid = getpid();
           }
-          // if the command contains a /, then set has_command_path to 1
+          // if the command contains a /, then note that there is a command path
           if (strchr(command, '/') != NULL) {
             has_command_path = 1;
           }
@@ -201,21 +201,16 @@ int main(int argc, char *argv[])
           }
         }
         // parent process
-        // if the command is not a background process
+        // if the command is not a background process (foreground process)
         if (background == 0) {
           // wait for the child process to finish
           int status;
-          waitpid(pid, &status, 0);
+          last_foreground_pid = waitpid(pid, &status, 0);
           // if the child process was terminated by a signal, then set the $? shell variable to
           // the signal number + 128
-          
-
-         
-        }
-        // if the command is a background process
-        else {
-          // print the pid of the background process
-          printf("background pid is %d\n", pid);
+          if (WIFSIGNALED(status)) {
+            last_foreground_pid = WTERMSIG(status) + 128;
+          }
         }
       }
     }
