@@ -45,7 +45,12 @@ int main(int argc, char *argv[])
 
     }
     ssize_t line_len = getline(&line, &n, input);
-    if (line_len < 0) err(1, "%s", input_fn);
+    if (line_len < 0) {
+      if (feof(input)) {
+        exit(0);
+      }
+      err(1, "%s", input_fn);
+    }
     
     size_t nwords = wordsplit(line);
     for (size_t i = 0; i < nwords; ++i) {
