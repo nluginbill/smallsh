@@ -183,6 +183,14 @@ int main(int argc, char *argv[])
               sprintf(pid_str, "%d", smallsh_pid);
               words[i] = pid_str;
             }
+          }// if <STATUS> is in the command, then replace it with the status of the last foreground
+          // process
+          for (size_t i = 0; i < nwords; ++i) {
+            if (strcmp(words[i], "<STATUS>") == 0) {
+              char status_str[10];
+              sprintf(status_str, "%d", last_foreground_exit_status);
+              words[i] = status_str;
+            }
           }
           // if there is a &, then we need to set the background to 1
           if (strcmp(words[nwords - 1], "&") == 0) {
