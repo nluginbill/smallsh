@@ -176,6 +176,14 @@ int main(int argc, char *argv[])
               break;
             }        
           }
+          // if <PID> is in the command, then replace it with the pid of smallsh
+          for (size_t i = 0; i < nwords; ++i) {
+            if (strcmp(words[i], "<PID>") == 0) {
+              char pid_str[10];
+              sprintf(pid_str, "%d", smallsh_pid);
+              words[i] = pid_str;
+            }
+          }
           // if there is a &, then we need to set the background to 1
           if (strcmp(words[nwords - 1], "&") == 0) {
             background = 1;
