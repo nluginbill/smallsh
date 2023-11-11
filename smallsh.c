@@ -139,6 +139,7 @@ int main(int argc, char *argv[])
               // remove the < and the file name from the words array
               words[i] = NULL;
               words[i + 1] = NULL;
+              nwords -= 2;
               break;
             }
             // if there is a >, then we need to open the file for writing
@@ -160,6 +161,7 @@ int main(int argc, char *argv[])
               // remove the > and the file name from the words array
               words[i] = NULL;
               words[i + 1] = NULL;
+              nwords -= 2;
               break;
             }
             // if there is a >>, then we need to open the file for appending
@@ -181,6 +183,7 @@ int main(int argc, char *argv[])
               // remove the >> and the file name from the words array
               words[i] = NULL;
               words[i + 1] = NULL;
+              nwords -= 2;
               break;
             }        
           }
