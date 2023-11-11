@@ -312,34 +312,39 @@ size_t wordsplit(char const *line) {
  * token.
  */
 char
-param_scan(char const *word, char **start, char **end)
+param_scan(char const *word, char const **start, char const **end)
 {
-  static char *prev;
+  static char const *prev;
   if (!word) word = prev;
   
   char ret = 0;
-  *start = NULL;
-  *end = NULL;
-  char *s = strchr(word, '$');
-  if (s) {
-    char *c = strchr("$!?", s[1]);
-    if (c) {
-      ret = *c;
+  *start = 0;
+  *end = 0;
+  for (char const *s = word; *s && !ret; ++s) {
+    s = strchr(s, '$');
+    if (!s) break;
+    switch (s[1]) {
+    case '$':
+    case '!':
+    case '?':
+      ret = s[1];
       *start = s;
       *end = s + 2;
-    }
-    else if (s[1] == '{') {
+      break;
+    case '{':;
       char *e = strchr(s + 2, '}');
       if (e) {
-        ret = '{';
+        ret = s[1];
         *start = s;
         *end = e + 1;
       }
+      break;
     }
   }
   prev = *end;
   return ret;
 }
+
 
 /* Simple string-builder function. Builds up a base
  * string by appending supplied strings/character ranges
@@ -381,7 +386,7 @@ char *
 expand(char const *word)
 {
   char const *pos = word;
-  char *start, *end;
+  char const *start, *end;
   char c = param_scan(pos, &start, &end);
   build_str(NULL, NULL);
   build_str(pos, start);
