@@ -205,6 +205,23 @@ int main(int argc, char *argv[])
               sprintf(bgpid_str, "%d", last_background_pid);
               words[i] = bgpid_str;
             }
+            char *start = strstr(words[i], "<Parameter: ");
+            if (start) {
+              start += 12; // length of "<Parameter: "
+              char *end = strchr(start, '>');
+              int length = end - start;
+              char *parameter = malloc(length + 1);
+              strncpy(parameter, start, length);
+              parameter[length] = '\0';
+
+              char *env_var_value = getenv(parameter);
+              if (env_var_value) {
+                words[i] = env_var_value;
+              }
+              else {
+                words[i] = "";
+              }
+            }
           }
 
           // if the command contains a /, then note that there is a command path
