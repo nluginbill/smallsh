@@ -104,6 +104,14 @@ int main(int argc, char *argv[])
       int background = 0;
       pid_t pid = -5;
       pid = fork();      
+      // if there is a &, then we need to set the background to 1
+      if (strcmp(words[nwords - 1], "&") == 0) {
+        background = 1;
+        // remove the & from the words array
+        words[nwords - 1] = NULL;
+        // store the pid from fork, the child, as the last background pid
+        last_background_pid = pid;
+      }
       // for handling error, child, or parent process
       switch (pid) {
         case -1:
@@ -192,14 +200,7 @@ int main(int argc, char *argv[])
             }
 
           }
-          // if there is a &, then we need to set the background to 1
-          if (strcmp(words[nwords - 1], "&") == 0) {
-            background = 1;
-            // remove the & from the words array
-            words[nwords - 1] = NULL;
-            // store the current pid as the last background pid
-            last_background_pid = getpid();
-          }
+
           // if the command contains a /, then note that there is a command path
           if (strchr(command, '/') != NULL) {
             has_command_path = 1;
