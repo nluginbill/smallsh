@@ -198,7 +198,13 @@ int main(int argc, char *argv[])
               sprintf(status_str, "%d", last_foreground_exit_status);
               words[i] = status_str;
             }
-
+            // if <BGPID> is in the command, then replace it with the pid of the last background
+            // process
+            if (strcmp(words[i], "<BGPID>") == 0) {
+              char bgpid_str[10];
+              sprintf(bgpid_str, "%d", last_background_pid);
+              words[i] = bgpid_str;
+            }
           }
 
           // if the command contains a /, then note that there is a command path
