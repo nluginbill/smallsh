@@ -56,7 +56,9 @@ int main(int argc, char *argv[])
       }
       // if the child process was stopped by a signal, then print the signal number
       else if (WIFSTOPPED(status)) {
-        fprintf(stderr, "Child process %d done. Signaled %d.\n", last_background_pid, WSTOPSIG(status));
+        fprintf(stderr, "Child process %d stopped. Continuing.\n", last_background_pid);
+        // send SIGCONT to stopped child process
+        kill(last_background_pid, SIGCONT);
       }
       // if the child process exited normally, then print the exit status
       else {
