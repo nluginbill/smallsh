@@ -113,6 +113,7 @@ int main(int argc, char *argv[])
         background = 1;
         // remove the & from the words array
         words[nwords - 1] = NULL;
+        nwords;
         // store the pid from fork, the child, as the last background pid
         last_background_pid = pid;
       }
