@@ -147,13 +147,15 @@ int main(int argc, char *argv[])
               // open the specified file for writing on stdoout. If the file does not exist it will be
               // created. If the file exists, it will be truncated to 0 bytes. File permissions will
               // be set to 0777.
-              FILE *output_file = open(words[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0777);
+              int output_file = open(words[i + 1], O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0777);
+              // FILE *output_file = fopen(words[i + 1], "w");
+
               if (!output_file) {
                 fprintf(stderr, "%s: %s\n", words[i + 1], strerror(errno));
                 exit(1);
               }
 
-              if (dup2(fileno(output_file), STDOUT_FILENO) == -1) {
+              if (dup2(output_file, STDOUT_FILENO) == -1) {
                 fprintf(stderr, "dup2: %s\n", strerror(errno));
                 exit(1);
               }
@@ -168,14 +170,15 @@ int main(int argc, char *argv[])
             else if (strcmp(words[i], ">>") == 0) {
               // open the specified file for appending on stdout. If the file does not exist it will be
               // created. File permissions will be set to 0777.
-              FILE *output_file = open(words[i + 1], O_WRONLY | O_CREAT | O_APPEND, 0777);
+              int output_file = open(words[i + 1], O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0777);
+
               if (!output_file) {
                 fprintf(stderr, "%s: %s\n", words[i + 1], strerror(errno));
                 exit(1);
               }
 
               // dup2 the file descriptor to stdout
-              if (dup2(fileno(output_file), STDOUT_FILENO) == -1) {
+              if (dup2(output_file, STDOUT_FILENO) == -1) {
                 fprintf(stderr, "dup2: %s\n", strerror(errno));
                 exit(1);
               }
@@ -312,39 +315,34 @@ size_t wordsplit(char const *line) {
  * token.
  */
 char
-param_scan(char const *word, char const **start, char const **end)
+param_scan(char const *word, char **start, char **end)
 {
-  static char const *prev;
+  static char *prev;
   if (!word) word = prev;
   
   char ret = 0;
-  *start = 0;
-  *end = 0;
-  for (char const *s = word; *s && !ret; ++s) {
-    s = strchr(s, '$');
-    if (!s) break;
-    switch (s[1]) {
-    case '$':
-    case '!':
-    case '?':
-      ret = s[1];
+  *start = NULL;
+  *end = NULL;
+  char *s = strchr(word, '$');
+  if (s) {
+    char *c = strchr("$!?", s[1]);
+    if (c) {
+      ret = *c;
       *start = s;
       *end = s + 2;
-      break;
-    case '{':;
+    }
+    else if (s[1] == '{') {
       char *e = strchr(s + 2, '}');
       if (e) {
-        ret = s[1];
+        ret = '{';
         *start = s;
         *end = e + 1;
       }
-      break;
     }
   }
   prev = *end;
   return ret;
 }
-
 
 /* Simple string-builder function. Builds up a base
  * string by appending supplied strings/character ranges
@@ -386,7 +384,7 @@ char *
 expand(char const *word)
 {
   char const *pos = word;
-  char const *start, *end;
+  char *start, *end;
   char c = param_scan(pos, &start, &end);
   build_str(NULL, NULL);
   build_str(pos, start);
