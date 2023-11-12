@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
               last_background_exit_status = WTERMSIG(status) + 128;
             } else {
               last_background_exit_status = WEXITSTATUS(status);
-              printf("Child process %d done. Exit status %d.\n", pid, last_background_exit_status);
+              fprintf(stderr, "Child process %d done. Exit status %d.\n", pid, last_background_exit_status);
             }
           if (last_background_pid == -1) {
             fprintf(stderr, "waitpid: %s\n", strerror(errno));
