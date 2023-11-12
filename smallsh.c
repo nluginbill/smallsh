@@ -53,18 +53,16 @@ int main(int argc, char *argv[])
     /* TODO: Manage background processes */
     // check the return value of waitpid() to determine if a child process has terminated and to retrieve its exit status.
     int status;
-    int pid;
-    if (pid = waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
+    if (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
       // if the child process was terminated by a signal
       if (WIFSIGNALED(status)) {
         fprintf(stderr, "Child process %d done. Signaled %d.\n", last_background_pid, WTERMSIG(status));
       }
       // if the child process was stopped by a signal
       else if (WIFSTOPPED(status)) {
-        fprintf(stderr, "Child process %d stopped. Continuing.\n", pid);
+        fprintf(stderr, "Child process %d stopped. Continuing.\n", last_background_pid);
         // send SIGCONT to stopped child process
-        kill(pid, SIGCONT);
-        last_background_pid = pid;
+        kill(last_background_pid, SIGCONT);
       }
       // if the child process exited normally, then print the exit status
       else {
@@ -298,17 +296,17 @@ int main(int argc, char *argv[])
           int status;
           // if the command is not a background process (foreground process)
           if (background == 0) {
-            // get the status of the child process without hanging
-            if (waitpid(pid, &status, WNOHANG | WUNTRACED) > 0) {
-              // if the child process was stopped by a signal
-              if (WIFSTOPPED(status)) {
-                fprintf(stderr, "Child process %d stopped. Continuing.\n", pid);
-                // send SIGCONT to stopped child process
-                kill(pid, SIGCONT);
-                last_background_pid = pid;
-                break;
-              }
-            } 
+            // // get the status of the child process without hanging
+            // if (waitpid(pid, &status, WNOHANG | WUNTRACED) > 0) {
+            //   // if the child process was stopped by a signal
+            //   if (WIFSTOPPED(status)) {
+            //     fprintf(stderr, "Child process %d stopped. Continuing.\n", pid);
+            //     // send SIGCONT to stopped child process
+            //     kill(pid, SIGCONT);
+            //     last_background_pid = pid;
+            //     break;
+            //   }
+            // } 
             
             // wait for the child process to finish
             
