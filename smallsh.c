@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 
     /* TODO: prompt */
     if (input == stdin) {
-      fprintf(stderr, "\n%s", PS1);
+      fprintf(stderr, "%s", PS1);
     // TODO: ignore signals
     }
     ssize_t line_len = getline(&line, &n, input);
