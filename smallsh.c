@@ -161,7 +161,8 @@ int main(int argc, char *argv[])
         case 0:
           // child process
           // TODO: All signals shall be reset to their original dispositions when smallsh was invoked
-          int has_command_path = 0;          
+          int has_command_path = 0;
+          int replaced_words = 0;          
 
           for (size_t i = 0; i < nwords; ++i) {
             // if there is a <, then we need to open the file for reading
@@ -179,8 +180,8 @@ int main(int argc, char *argv[])
               // remove the < and the file name from the words array
               words[i] = NULL;
               words[i + 1] = NULL;
-              nwords -= 2;
-              break;
+              i += 1;
+              replaced_words += 2;
             }
             // if there is a >, then we need to open the file for writing
             else if (strcmp(words[i], ">") == 0) {
@@ -203,8 +204,8 @@ int main(int argc, char *argv[])
               // remove the > and the file name from the words array
               words[i] = NULL;
               words[i + 1] = NULL;
-              nwords -= 2;
-              break;
+              i += 1;
+              replaced_words += 2;
             }
             // if there is a >>, then we need to open the file for appending
             else if (strcmp(words[i], ">>") == 0) {
@@ -226,10 +227,11 @@ int main(int argc, char *argv[])
               // remove the >> and the file name from the words array
               words[i] = NULL;
               words[i + 1] = NULL;
-              nwords -= 2;
-              break;
+              i += 1;
+              replaced_words += 2;
             }        
           }
+          nwords -= replaced_words;
           for (size_t i = 0; i < nwords; ++i) {
             // if <PID> is in the command, then replace it with the pid of smallsh
             if (strcmp(words[i], "<PID>") == 0) {
