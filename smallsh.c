@@ -53,6 +53,10 @@ int main(int argc, char *argv[])
     }
     
     size_t nwords = wordsplit(line);
+    // null out the words that remain in the words array past nwords
+    for (size_t i = nwords; i < MAX_WORDS; ++i) {
+      words[i] = NULL;
+    }
     for (size_t i = 0; i < nwords; ++i) {
       // fprintf(stderr, "Word %zu: %s\n", i, words[i]);
       char *exp_word = expand(words[i]);
@@ -122,7 +126,6 @@ int main(int argc, char *argv[])
           // child process
           // TODO: All signals shall be reset to their original dispositions when smallsh was invoked
           int has_command_path = 0;          
-
 
           for (size_t i = 0; i < nwords; ++i) {
             // if there is a <, then we need to open the file for reading
