@@ -50,11 +50,11 @@ int main(int argc, char *argv[])
     // check the return value of waitpid() to determine if a child process has terminated and to retrieve its exit status.
     int status;
     if (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
-      // if the child process was terminated by a signal, then print the signal number
+      // if the child process was terminated by a signal
       if (WIFSIGNALED(status)) {
         fprintf(stderr, "Child process %d done. Signaled %d.\n", last_background_pid, WTERMSIG(status));
       }
-      // if the child process was stopped by a signal, then print the signal number
+      // if the child process was stopped by a signal
       else if (WIFSTOPPED(status)) {
         fprintf(stderr, "Child process %d stopped. Continuing.\n", last_background_pid);
         // send SIGCONT to stopped child process
@@ -301,6 +301,12 @@ int main(int argc, char *argv[])
               last_foreground_exit_status = WTERMSIG(status) + 128;
             } else {
               last_foreground_exit_status = WEXITSTATUS(status);
+            }
+            // if child process was stopped by a signal
+            if (WIFSTOPPED(status)) {
+              fprintf(stderr, "Child process %d stopped. Continuing.\n", last_foreground_pid);
+              // send SIGCONT to stopped child process
+              kill(last_foreground_pid, SIGCONT);
             }
           break;
           }
