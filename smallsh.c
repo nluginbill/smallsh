@@ -291,6 +291,18 @@ int main(int argc, char *argv[])
           int status;
           // if the command is not a background process (foreground process)
           if (background == 0) {
+            // get the status of the child process without hanging
+            if (waitpid(pid, &status, WNOHANG | WUNTRACED) > 0) {
+              // if the child process was stopped by a signal
+              if (WIFSTOPPED(status)) {
+                fprintf(stderr, "Child process %d stopped. Continuing.\n", pid);
+                // send SIGCONT to stopped child process
+                kill(pid, SIGCONT);
+                last_background_pid = pid;
+                break;
+              }
+            } 
+            
             // wait for the child process to finish
             
             pid_t last_foreground_pid = waitpid(pid, &status, 0);
