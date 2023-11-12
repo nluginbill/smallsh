@@ -122,10 +122,6 @@ int main(int argc, char *argv[])
           // child process
           // TODO: All signals shall be reset to their original dispositions when smallsh was invoked
           int has_command_path = 0;          
-          // print the words array to stderr
-          for (size_t i = 0; i < nwords; ++i) {
-            fprintf(stderr, "Word %zu: %s\n", i, words[i]);
-          }
 
 
           for (size_t i = 0; i < nwords; ++i) {
@@ -249,10 +245,6 @@ int main(int argc, char *argv[])
                 exit(1);
               }
             } else {
-              // print the words array to stderr
-              for (size_t i = 0; i < nwords; ++i) {
-                fprintf(stderr, "Word %zu: %s\n", i, words[i]);
-              }
               // execute the command with execvp
               if (execvp(command, words) == -1) {
                 fprintf(stderr, "%s: %s\n", command, strerror(errno));
