@@ -15,6 +15,13 @@
 #endif
 
 char *words[MAX_WORDS];
+// a struct to hold the background processes, pid and exit status
+struct background_process {
+  pid_t pid;
+  int exit_status;
+};
+// an array of background processes
+struct background_process background_processes[MAX_WORDS];
 pid_t last_background_pid = -5;
 pid_t last_background_exit_status = 0;
 pid_t last_foreground_exit_status = 0;
@@ -260,20 +267,6 @@ int main(int argc, char *argv[])
           default:
           // parent process
           int status;
-          if (background == 1) {
-            last_background_pid = waitpid(pid, &status, WNOHANG );
-
-            if (WIFSIGNALED(status)) {
-              last_background_exit_status = WTERMSIG(status) + 128;
-            } else {
-              last_background_exit_status = WEXITSTATUS(status);
-              fprintf(stderr, "Child process %d done. Exit status %d.\n", pid, last_background_exit_status);
-            }
-          if (last_background_pid == -1) {
-            fprintf(stderr, "waitpid: %s\n", strerror(errno));
-          }
-          break;
-          }
           // if the command is not a background process (foreground process)
           if (background == 0) {
             // wait for the child process to finish
@@ -288,11 +281,8 @@ int main(int argc, char *argv[])
               last_foreground_exit_status = WEXITSTATUS(status);
             }
           break;
-            
           }
-
         }
-        
       }
     }
   }
