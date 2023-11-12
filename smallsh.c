@@ -52,15 +52,15 @@ int main(int argc, char *argv[])
     if (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
       // if the child process was terminated by a signal, then print the signal number
       if (WIFSIGNALED(status)) {
-        fprintf(stderr, "background pid %d is done: terminated by signal %d\n", last_background_pid, WTERMSIG(status));
+        fprintf(stderr, "background pid %d done. Signaled %d.\n", last_background_pid, WTERMSIG(status));
       }
       // if the child process was stopped by a signal, then print the signal number
       else if (WIFSTOPPED(status)) {
-        fprintf(stderr, "background pid %d is done: stopped by signal %d\n", last_background_pid, WSTOPSIG(status));
+        fprintf(stderr, "background pid %d done. Signaled %d.\n", last_background_pid, WSTOPSIG(status));
       }
       // if the child process exited normally, then print the exit status
       else {
-        fprintf(stderr, "background pid %d is done: exit value %d\n", last_background_pid, WEXITSTATUS(status));
+        fprintf(stderr, "background pid %d done. Exit status %d.\n", last_background_pid, WEXITSTATUS(status));
       }
     }
 
