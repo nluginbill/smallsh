@@ -34,6 +34,10 @@ int main(int argc, char *argv[])
   smallsh_pid = getpid();
   FILE *input = stdin;
   char *input_fn = "(stdin)";
+  char *PS1 = getenv("PS1");
+  if (PS1 == NULL) {
+    PS1 = "";
+  }
   if (argc == 2) {
     input_fn = argv[1];
     input = fopen(input_fn, "re");
@@ -49,16 +53,18 @@ int main(int argc, char *argv[])
     /* TODO: Manage background processes */
     // check the return value of waitpid() to determine if a child process has terminated and to retrieve its exit status.
     int status;
-    if (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
+    int pid;
+    if (pid = waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
       // if the child process was terminated by a signal
       if (WIFSIGNALED(status)) {
         fprintf(stderr, "Child process %d done. Signaled %d.\n", last_background_pid, WTERMSIG(status));
       }
       // if the child process was stopped by a signal
       else if (WIFSTOPPED(status)) {
-        fprintf(stderr, "Child process %d stopped. Continuing.\n", last_background_pid);
+        fprintf(stderr, "Child process %d stopped. Continuing.\n", pid);
         // send SIGCONT to stopped child process
-        kill(last_background_pid, SIGCONT);
+        kill(pid, SIGCONT);
+        last_background_pid = pid;
       }
       // if the child process exited normally, then print the exit status
       else {
@@ -68,7 +74,8 @@ int main(int argc, char *argv[])
 
     /* TODO: prompt */
     if (input == stdin) {
-
+      fprintf(stderr, "\n%s", PS1);
+    // TODO: ignore signals
     }
     ssize_t line_len = getline(&line, &n, input);
     if (line_len < 0) {
@@ -314,12 +321,7 @@ int main(int argc, char *argv[])
             } else {
               last_foreground_exit_status = WEXITSTATUS(status);
             }
-            // if child process was stopped by a signal
-            if (WIFSTOPPED(status)) {
-              fprintf(stderr, "Child process %d stopped. Continuing.\n", last_foreground_pid);
-              // send SIGCONT to stopped child process
-              kill(last_foreground_pid, SIGCONT);
-            }
+            
           break;
           }
         }
