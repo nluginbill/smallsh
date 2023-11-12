@@ -90,6 +90,10 @@ int main(int argc, char *argv[])
     }
 
     char *command = words[0];
+    // if command is a blank line, then ignore it
+    if (command == NULL) {
+      continue;
+    }
 
     if (strcmp(command, "exit") == 0) {
       if (nwords > 2) {
