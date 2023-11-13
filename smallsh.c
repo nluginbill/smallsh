@@ -29,8 +29,30 @@ pid_t smallsh_pid = -5;
 size_t wordsplit(char const *line);
 char * expand(char const *word);
 
+// Signal handler that does nothing
+void sigint_handler(int signum) {
+    // This is intentionally left empty to do nothing on SIGINT
+}
+
 int main(int argc, char *argv[])
 {
+    struct sigaction sa_ignore, sa_default;
+
+    // Set up the sigaction struct to ignore SIGINT
+    sa_ignore.sa_handler = SIG_IGN;
+    sigfillset(&sa_ignore.sa_mask);
+    sa_ignore.sa_flags = 0;
+
+    // Set up the sigaction struct to handle SIGINT with the empty handler
+    sa_default.sa_handler = sigint_handler;
+    sigfillset(&sa_default.sa_mask);
+    sa_default.sa_flags = 0;
+
+    // Ignore SIGINT by default
+    if (sigaction(SIGINT, &sa_ignore, NULL) == -1) {
+        perror("Error ignoring SIGINT");
+        exit(EXIT_FAILURE);
+    }
   smallsh_pid = getpid();
   FILE *input = stdin;
   char *input_fn = "(stdin)";
@@ -68,6 +90,12 @@ int main(int argc, char *argv[])
       else {
         fprintf(stderr, "Child process %d done. Exit status %d.\n", last_background_pid, WEXITSTATUS(status));
       }
+    }
+
+        // Register the do-nothing handler before reading input
+    if (sigaction(SIGINT, &sa_default, NULL) == -1) {
+        perror("Error registering SIGINT handler");
+        exit(EXIT_FAILURE);
     }
 
     /* TODO: prompt */
@@ -331,7 +359,6 @@ int main(int argc, char *argv[])
 
 char *words[MAX_WORDS] = {0};
 
-
 /* Splits a string into words delimited by whitespace. Recognizes
  * comments as '#' at the beginning of a word, and backslash escapes.
  *
@@ -447,7 +474,7 @@ char *
 expand(char const *word)
 {
   char const *pos = word;
-  char *start, *end;
+  char const *start, *end;
   char c = param_scan(pos, &start, &end);
   build_str(NULL, NULL);
   build_str(pos, start);
